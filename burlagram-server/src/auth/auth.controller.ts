@@ -1,8 +1,8 @@
 import { Body, Controller, Post, Res } from '@nestjs/common'
 import { AuthService } from './auth.service'
-import { RegistrationDto } from './auth.dto'
 import { Public } from './decorator/public.decorator'
 import { Response } from 'express'
+import { AuthorizationDto } from '@biba/shared'
 
 @Controller('auth')
 export class AuthController {
@@ -11,7 +11,7 @@ export class AuthController {
 	@Public()
 	@Post('login')
 	async login(
-		@Body() registrationDto: RegistrationDto,
+		@Body() registrationDto: AuthorizationDto,
 		@Res({ passthrough: true }) res: Response,
 	) {
 		const accessCookie = await this.authService.login(
@@ -24,7 +24,7 @@ export class AuthController {
 	@Public()
 	@Post('registration')
 	async register(
-		@Body() registrationDto: RegistrationDto,
+		@Body() registrationDto: AuthorizationDto,
 		@Res({ passthrough: true }) res: Response,
 	) {
 		const accessCookie = await this.authService.register(

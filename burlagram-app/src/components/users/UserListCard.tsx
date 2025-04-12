@@ -1,8 +1,8 @@
+import { UserListDto } from '@biba/shared'
 import { Avatar, Box, Paper, Stack, Typography } from '@mui/material'
-import { UserType } from 'api'
-import { useUser } from 'util'
+import { useUser } from 'util/user-context'
 
-export const UsersListCard = ({ user }: { user: UserType }) => {
+export const UsersListCard = ({ user }: { user: UserListDto }) => {
 	const { user: currentUser } = useUser()
 
 	return (

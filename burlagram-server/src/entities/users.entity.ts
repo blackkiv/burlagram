@@ -9,8 +9,8 @@ import { Chat } from './chats.entity'
 
 @Entity({ name: 'app_user' })
 export class User {
-	@PrimaryGeneratedColumn('uuid')
-	id: string
+	@PrimaryGeneratedColumn()
+	id: number
 
 	@Column({ unique: true })
 	username: string

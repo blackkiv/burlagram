@@ -1,30 +1,40 @@
+import { MessageDto, NewMessageEvent } from '@biba/shared'
 import { Box, Button, Paper, Stack, TextField, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
-import { chatInfo, MessageType, socket } from 'api'
+import { chatInfo, socket } from 'api'
 import { useEffect, useState } from 'react'
+import { useUser } from 'util/user-context'
 
-type PartialMessageType = Partial<MessageType>
+type PartialMessageType = Partial<MessageDto>
 
-export const Chat = ({ chatId }: { chatId: string }) => {
+export const Chat = ({ chatId }: { chatId: number }) => {
+    const user = useUser()
+
     const $chat = useQuery({ queryKey: ['chatInfo', chatId], queryFn: () => chatInfo({ chatId }) })
     const chat = $chat.data
-    // TODO wtf...
-    const [messages, setMessages] = useState<Set<PartialMessageType>>(new Set())
+    const [messages, setMessages] = useState<PartialMessageType[]>([])
     const [message, setMessage] = useState<string>('')
 
     const sendMessage = (message: PartialMessageType) => {
-        socket.emit('send_message', { ...message, chatId: chat?.id })
+        socket.emit('message', { content: message, chatId: chat?.id })
     }
 
     useEffect(() => {
         if (!$chat.isLoading && chat) {
-            setMessages(new Set(chat.messages))
+            setMessages(chat.messages)
         }
     }, [$chat.isLoading, chat])
 
-    socket.on('new_message', (message: PartialMessageType & { chatId: string }) => {
-        if (message.chatId === chat?.id) {
-            setMessages(oldMessages => (new Set([...Array.from(oldMessages.values()), message])))
+    useEffect(() => {
+        socket.on('message', (message: NewMessageEvent) => {
+            console.log(message)
+            if (message.chatId === chat?.id) {
+                setMessages(oldMessages => ([...oldMessages, message.content]))
+            }
+        })
+
+        return () => {
+            socket.off('message')
         }
     })
 
@@ -38,11 +48,11 @@ export const Chat = ({ chatId }: { chatId: string }) => {
                         label="message"
                         onChange={event => setMessage(event.target.value ?? '')}
                     />
-                    <Button onClick={() => sendMessage({ content: message })}>
+                    <Button onClick={() => sendMessage({ content: message, author: user.user.id })}>
                         send
                     </Button>
                 </Box>
-                {Array.from(messages.values()).map(message => (
+                {messages.map(message => (
                     <Box key={message.id}>
                         <Typography>{message.content}</Typography>
                     </Box>

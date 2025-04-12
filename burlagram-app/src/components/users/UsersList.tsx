@@ -3,7 +3,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { createChat, users } from 'api'
 import { UsersListCard } from './UserListCard'
 
-export const UsersList = ({ onChatSelect }: { onChatSelect: (chatId: string) => void }) => {
+export const UsersList = ({ onChatSelect }: { onChatSelect: (chatId: number) => void }) => {
 	const $users = useQuery({ queryKey: ['users'], queryFn: users })
 	const usersData = $users.data
 
@@ -18,8 +18,8 @@ export const UsersList = ({ onChatSelect }: { onChatSelect: (chatId: string) => 
 			>
 				{usersData?.map((user) => {
 					return (
-						<Box sx={{ m: 1 }} key={user.username} onClick={() => {
-							$createChat.mutate({ usernames: [user.username] })
+						<Box sx={{ m: 1 }} key={user.id} onClick={() => {
+							$createChat.mutate({ ids: [user.id] })
 						}}>
 							<UsersListCard user={user} />
 						</Box>

@@ -5,8 +5,9 @@ import { UsersService } from 'users/users.service'
 import { Chat } from 'entities/chats.entity'
 import { User } from 'entities/users.entity'
 import { computeUsersHash } from 'util/hash.util'
-import { ChatResponse } from './chats.dto'
 import { Message } from 'entities/messages.entity'
+import { UserContext } from 'auth/dto/user-context.dto'
+import { ChatListResponse, ChatResponse } from '@biba/shared'
 
 @Injectable()
 export class ChatsService {
@@ -19,36 +20,36 @@ export class ChatsService {
 		private usersService: UsersService,
 	) {}
 
-	async getChats(user: User) {
+	async getChats(user: UserContext): Promise<ChatListResponse[]> {
 		const userData = await this.usersRepository.findOne({
 			relations: ['chats', 'chats.users'],
 			where: {
-				username: user.username,
+				id: user.id,
 			},
 		})
 
+		if (!userData) {
+			return []
+		}
+
 		return userData?.chats.map((chat) => {
 			const tempSecondUser =
-				chat.users.filter(
-					(chatUser) => chatUser.username !== user.username,
-				)[0] ?? chat.users[0]
+				chat.users.filter((chatUser) => chatUser.id !== user.id)[0] ??
+				chat.users[0]
 			const { password, ...secondUser } = tempSecondUser
 			return { id: chat.id, secondUser }
 		})
 	}
 
-	async createChatWith(user: User, usernames: string[]): Promise<string> {
-		const usersHash = computeUsersHash([user.username, ...usernames])
+	async createChatWith(user: UserContext, userIds: number[]): Promise<number> {
+		const usersHash = computeUsersHash([user.id, ...userIds])
 		const existingChat = await this.chatsRepository.findOneBy({ usersHash })
 
 		if (existingChat) {
 			return existingChat.id
 		}
 
-		const users = await this.usersService.findByUsernames([
-			user.username,
-			...usernames,
-		])
+		const users = await this.usersService.findByIds([user.id, ...userIds])
 
 		const chat = await this.chatsRepository.save({
 			messages: [],
@@ -58,13 +59,16 @@ export class ChatsService {
 		return chat.id
 	}
 
-	async getChat(user: User, chatId: string): Promise<ChatResponse | null> {
+	async getChat(
+		user: UserContext,
+		chatId: number,
+	): Promise<ChatResponse | null> {
 		const chat = await this.chatsRepository.findOne({
 			relations: ['messages', 'users'],
 			where: {
 				id: chatId,
 				users: {
-					username: user.username,
+					id: user.id,
 				},
 			},
 		})
@@ -73,28 +77,31 @@ export class ChatsService {
 			throw new BadRequestException()
 		}
 
-		const { password, ...receiver } =
-			chat.users.find((chatUser) => chatUser.username !== user.username) ?? user
+		const tempSecondUser =
+			chat.users.filter((chatUser) => chatUser.id !== user.id)[0] ??
+			chat.users[0]
+		const { password, ...secondUser } = tempSecondUser
 
-		return { id: chat.id, messages: chat.messages, receiver }
+		return { id: chat.id, messages: chat.messages, secondUser }
 	}
 
 	async saveNewMessage(
-		content: any,
-		chatId: string,
+		message: Partial<Message>,
+		chatId: number,
 	): Promise<Omit<Message, 'chat'>> {
 		const chat = await this.chatsRepository.findOneBy({ id: chatId })
 		if (!chat) {
 			throw new BadRequestException()
 		}
 
-		const message = await this.messagesRepository.save({
-			content: content,
+		const savedMessage = await this.messagesRepository.save({
+			content: message.content,
 			chat: chat,
+			author: message.author,
 		})
 
-		const { chat: messageChat, ...rest } = message
+		const { chat: messageChat, ...rest } = savedMessage
 
-		return message
+		return rest
 	}
 }

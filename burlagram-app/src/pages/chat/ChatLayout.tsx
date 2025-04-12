@@ -1,10 +1,10 @@
-import { Box, Button, Stack } from '@mui/material'
+import { Stack } from '@mui/material'
 import { Chat } from 'components/chat/Chat'
 import { UsersList } from 'components/users/UsersList'
 import { useState } from 'react'
 
 export const ChatLayout = () => {
-	const [selectedChat, setSelectedChat] = useState<string | undefined>()
+	const [selectedChat, setSelectedChat] = useState<number | undefined>()
 
 	return (
 		<>

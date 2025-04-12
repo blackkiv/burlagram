@@ -10,8 +10,8 @@ import { User } from './users.entity'
 
 @Entity()
 export class Chat {
-	@PrimaryGeneratedColumn('uuid')
-	id: string
+	@PrimaryGeneratedColumn()
+	id: number
 
 	@OneToMany((type) => Message, (message) => message.chat)
 	messages: Message[]

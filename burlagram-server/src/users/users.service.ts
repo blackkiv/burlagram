@@ -1,8 +1,11 @@
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { In, Not, Repository } from 'typeorm'
-import { UserListDto } from './users.dto'
 import { User } from 'entities/users.entity'
+import { passConstants } from 'auth/auth.constants'
+import { compare as hashCompare, hash } from 'bcrypt'
+import { UserContext } from 'auth/dto/user-context.dto'
+import { UserDto, UserListDto } from '@biba/shared'
 
 @Injectable()
 export class UsersService {
@@ -10,11 +13,20 @@ export class UsersService {
 		@InjectRepository(User) private usersRepository: Repository<User>,
 	) {}
 
-	findOneByUsernameAndPass(
+	async findOneByUsernameAndPass(
 		username: string,
 		pass: string,
-	): Promise<User | null> {
-		return this.usersRepository.findOneBy({ username, password: pass })
+	): Promise<UserDto | null> {
+		const user = await this.usersRepository.findOneBy({ username })
+
+		if (user) {
+			const samePass = await hashCompare(pass, user.password)
+			if (samePass) {
+				const { password: userPassword, ...rest } = user
+				return rest
+			}
+		}
+		return null
 	}
 
 	async register(username: string, pass: string): Promise<User | null> {
@@ -23,24 +35,23 @@ export class UsersService {
 			return null
 		}
 
-		return this.usersRepository.save({ username, password: pass })
+		const password = await hash(pass, passConstants.salt)
+
+		return this.usersRepository.save({ username, password })
 	}
 
-	findUserData(username: string): Promise<User | null> {
-		return this.usersRepository.findOneBy({ username })
-	}
-
-	async findList(user: User): Promise<UserListDto[]> {
+	async findList(user: UserContext): Promise<UserListDto[]> {
 		const users = await this.usersRepository.find()
+
 		return (
 			users.map((user) => {
-				const { password, chats, id, ...rest } = user
+				const { password, chats, ...rest } = user
 				return rest
 			}) ?? []
 		)
 	}
 
-	findByUsernames(usernames: string[]): Promise<User[]> {
-		return this.usersRepository.findBy({ username: In(usernames) })
+	findByIds(userIds: number[]): Promise<User[]> {
+		return this.usersRepository.findBy({ id: In(userIds) })
 	}
 }
