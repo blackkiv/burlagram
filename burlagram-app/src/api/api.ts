@@ -1,9 +1,10 @@
 import axios from 'axios'
+import { io } from 'socket.io-client'
 
-const externalUrl = 'localhost:3000'
+export const apiUrl = 'http://localhost:3000'
+export const socketUrl = 'http://localhost:3001'
 
-export const apiUrl = `http://${externalUrl}`
-// export const wsUrl = `ws://${externalUrl}/ws` // TODO
+export const socket = io(socketUrl, { autoConnect: false, transports: ['websocket'] })
 
 export type UserType = {
 	username: string
@@ -68,7 +69,8 @@ export type MessageType = {
 
 export type ChatType = {
 	id: string,
-	messages: MessageType[]
+	messages: MessageType[],
+	receiver: UserType,
 }
 
 export const chatInfo = async ({ chatId }: { chatId: string }) => {

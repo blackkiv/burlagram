@@ -1,68 +1,100 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { Repository } from 'typeorm';
-import { InjectRepository } from '@nestjs/typeorm';
-import { UsersService } from 'users/users.service';
-import { Chat } from 'entities/chats.entity';
-import { User } from 'entities/users.entity';
-import { computeUsersHash } from 'util/hash.util';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common'
+import { Repository } from 'typeorm'
+import { InjectRepository } from '@nestjs/typeorm'
+import { UsersService } from 'users/users.service'
+import { Chat } from 'entities/chats.entity'
+import { User } from 'entities/users.entity'
+import { computeUsersHash } from 'util/hash.util'
+import { ChatResponse } from './chats.dto'
+import { Message } from 'entities/messages.entity'
 
 @Injectable()
 export class ChatsService {
+	private readonly logger = new Logger(ChatsService.name)
 
-    private readonly logger = new Logger(ChatsService.name)
+	constructor(
+		@InjectRepository(Chat) private chatsRepository: Repository<Chat>,
+		@InjectRepository(User) private usersRepository: Repository<User>,
+		@InjectRepository(Message) private messagesRepository: Repository<Message>,
+		private usersService: UsersService,
+	) {}
 
-    constructor(
-        @InjectRepository(Chat) private chatsRepository: Repository<Chat>,
-        @InjectRepository(User) private usersRepository: Repository<User>,
-        private usersService: UsersService,
-    ) { }
+	async getChats(user: User) {
+		const userData = await this.usersRepository.findOne({
+			relations: ['chats', 'chats.users'],
+			where: {
+				username: user.username,
+			},
+		})
 
-    async getChats(user: User) {
-        const userData = await this.usersRepository.findOne({
-            relations: ['chats', 'chats.users'],
-            where: {
-                username: user.username
-            }
-        })
+		return userData?.chats.map((chat) => {
+			const tempSecondUser =
+				chat.users.filter(
+					(chatUser) => chatUser.username !== user.username,
+				)[0] ?? chat.users[0]
+			const { password, ...secondUser } = tempSecondUser
+			return { id: chat.id, secondUser }
+		})
+	}
 
-        return userData?.chats.map(chat => {
-            const tempSecondUser = chat.users.filter(chatUser => chatUser.username !== user.username)[0] ?? chat.users[0]
-            const { password, ...secondUser } = tempSecondUser
-            return { id: chat.id, secondUser }
-        })
-    }
+	async createChatWith(user: User, usernames: string[]): Promise<string> {
+		const usersHash = computeUsersHash([user.username, ...usernames])
+		const existingChat = await this.chatsRepository.findOneBy({ usersHash })
 
-    async createChatWith(user: User, usernames: string[]): Promise<string> {
-        const usersHash = computeUsersHash([user.username, ...usernames])
-        const existingChat = await this.chatsRepository.findOneBy({ usersHash })
+		if (existingChat) {
+			return existingChat.id
+		}
 
-        if (existingChat) {
-            return existingChat.id
-        }
+		const users = await this.usersService.findByUsernames([
+			user.username,
+			...usernames,
+		])
 
-        const users = await this.usersService.findByUsernames([user.username, ...usernames])
+		const chat = await this.chatsRepository.save({
+			messages: [],
+			users,
+			usersHash,
+		})
+		return chat.id
+	}
 
-        const chat = await this.chatsRepository.save({ messages: [], users, usersHash })
-        return chat.id
-    }
+	async getChat(user: User, chatId: string): Promise<ChatResponse | null> {
+		const chat = await this.chatsRepository.findOne({
+			relations: ['messages', 'users'],
+			where: {
+				id: chatId,
+				users: {
+					username: user.username,
+				},
+			},
+		})
 
-    async getChat(user: User, chatId: string): Promise<Partial<Chat> | null> {
-        const chat = await this.chatsRepository.findOne({
-            relations: ['messages'],
-            where: {
-                id: chatId,
-                users: {
-                    username: user.username
-                }
-            }
-        })
+		if (!chat) {
+			throw new BadRequestException()
+		}
 
-        if (!chat) {
-            throw new BadRequestException()
-        }
+		const { password, ...receiver } =
+			chat.users.find((chatUser) => chatUser.username !== user.username) ?? user
 
-        const { usersHash, ...selectedChat } = chat
+		return { id: chat.id, messages: chat.messages, receiver }
+	}
 
-        return selectedChat
-    }
+	async saveNewMessage(
+		content: any,
+		chatId: string,
+	): Promise<Omit<Message, 'chat'>> {
+		const chat = await this.chatsRepository.findOneBy({ id: chatId })
+		if (!chat) {
+			throw new BadRequestException()
+		}
+
+		const message = await this.messagesRepository.save({
+			content: content,
+			chat: chat,
+		})
+
+		const { chat: messageChat, ...rest } = message
+
+		return message
+	}
 }

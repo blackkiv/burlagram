@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { userData } from 'api'
+import { socket, userData } from 'api'
 import { AxiosError } from 'axios'
 import { ReactNode, Suspense, useEffect } from 'react'
 import { useNavigate } from 'react-router'
@@ -19,6 +19,12 @@ export const ProtectedRoute = ({ children }: { children: ReactNode }) => {
 	}, [$userData.error])
 
 	const user = $userData.data
+
+	useEffect(() => {
+		if (user) {
+			socket.connect()
+		}
+	}, [user])
 
 	return (
 		!$userData.isLoading &&

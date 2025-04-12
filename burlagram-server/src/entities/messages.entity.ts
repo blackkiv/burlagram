@@ -1,18 +1,23 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from "typeorm"
-import { Chat } from "./chats.entity"
+import {
+	Entity,
+	PrimaryGeneratedColumn,
+	Column,
+	ManyToOne,
+	CreateDateColumn,
+} from 'typeorm'
+import { Chat } from './chats.entity'
 
 @Entity()
 export class Message {
+	@PrimaryGeneratedColumn('uuid')
+	id: string
 
-    @PrimaryGeneratedColumn("uuid")
-    id: string
+	@Column({ type: 'json' })
+	content: string
 
-    @Column({ type: 'json' })
-    content: string
+	@ManyToOne((type) => Chat, (chat) => chat.messages)
+	chat: Chat
 
-    @ManyToOne(type => Chat, chat => chat.messages)
-    chat: Chat
-
-    @CreateDateColumn()
-    timestamp: Date
+	@CreateDateColumn()
+	timestamp: Date
 }

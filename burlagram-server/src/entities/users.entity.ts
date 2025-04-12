@@ -1,21 +1,26 @@
-import { Column, Entity, JoinTable, ManyToMany, PrimaryGeneratedColumn } from "typeorm";
-import { Chat } from "./chats.entity";
+import {
+	Column,
+	Entity,
+	JoinTable,
+	ManyToMany,
+	PrimaryGeneratedColumn,
+} from 'typeorm'
+import { Chat } from './chats.entity'
 
 @Entity({ name: 'app_user' })
 export class User {
+	@PrimaryGeneratedColumn('uuid')
+	id: string
 
-    @PrimaryGeneratedColumn("uuid")
-    id: string
+	@Column({ unique: true })
+	username: string
 
-    @Column({ unique: true })
-    username: string
+	@Column()
+	password: string
 
-    @Column()
-    password: string
-
-    @ManyToMany(() => Chat, chat => chat.users)
-    @JoinTable({
-        name: 'users_chats'
-    })
-    chats: Chat[]
+	@ManyToMany(() => Chat, (chat) => chat.users)
+	@JoinTable({
+		name: 'users_chats',
+	})
+	chats: Chat[]
 }
