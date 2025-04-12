@@ -1,4 +1,4 @@
-import { MessageDto, NewMessageEvent } from '@biba/shared'
+import { JoinRoomEvent, MessageDto, NewMessageEvent } from '@biba/shared'
 import { Box, Button, Paper, Stack, TextField, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import { chatInfo, socket } from 'api'
@@ -27,16 +27,25 @@ export const Chat = ({ chatId }: { chatId: number }) => {
 
     useEffect(() => {
         socket.on('message', (message: NewMessageEvent) => {
-            console.log(message)
             if (message.chatId === chat?.id) {
                 setMessages(oldMessages => ([...oldMessages, message.content]))
             }
         })
 
+        socket.on('joinRoom', (_message: JoinRoomEvent) => {
+            // console.log(message)
+        })
+
         return () => {
             socket.off('message')
+            socket.off('joinRoom')
         }
     })
+
+    useEffect(() => {
+        console.log(`joining room ${chatId}`)
+        socket.emit('joinRoom', { chatId })
+    }, [chatId])
 
     return !$chat.isLoading ? (
         <Paper elevation={2}>

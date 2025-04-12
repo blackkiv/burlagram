@@ -3,7 +3,7 @@ import { socket, userData } from 'api'
 import { AxiosError } from 'axios'
 import { ReactNode, Suspense, useEffect } from 'react'
 import { useNavigate } from 'react-router'
-import { UserContext } from 'util'
+import { UserContext } from 'util/user-context'
 
 export const ProtectedRoute = ({ children }: { children: ReactNode }) => {
 	const navigate = useNavigate()
