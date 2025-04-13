@@ -67,9 +67,6 @@ export class ChatsService {
 			relations: ['messages', 'users'],
 			where: {
 				id: chatId,
-				users: {
-					id: user.id,
-				},
 			},
 		})
 

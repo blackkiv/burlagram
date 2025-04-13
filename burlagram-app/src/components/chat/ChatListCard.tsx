@@ -1,15 +1,15 @@
+import { UserListDto } from '@biba/shared'
 import { Avatar, Paper, Stack, Typography } from '@mui/material'
-import { UserType } from 'api'
-import { useUser } from 'util'
+import { useUser } from 'util/user-context'
 
-export const ChatsListCard = ({ user }: { user: UserType }) => {
+export const ChatsListCard = ({ user }: { user: UserListDto }) => {
 	const { user: currentUser } = useUser()
 
 	return (
 		<Paper
 			elevation={3}
 			sx={{
-				height: '60px',
+				height: '4em',
 			}}
 		>
 			<Stack

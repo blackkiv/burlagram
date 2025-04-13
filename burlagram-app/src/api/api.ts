@@ -1,11 +1,21 @@
 import axios from 'axios'
 import { io } from 'socket.io-client'
-import { UserDto, AuthorizationDto, UserListDto, ChatListResponse, ChatCreateDto, ChatDto } from '@biba/shared'
+import {
+	UserDto,
+	AuthorizationDto,
+	UserListDto,
+	ChatListResponse,
+	ChatCreateDto,
+	ChatResponse,
+} from '@biba/shared'
 
 export const apiUrl = 'http://localhost:3000'
 export const socketUrl = 'http://localhost:3001'
 
-export const socket = io(socketUrl, { autoConnect: false, transports: ['websocket'] })
+export const socket = io(socketUrl, {
+	autoConnect: false,
+	transports: ['websocket'],
+})
 
 export const userData = async () => {
 	const response = await axios.get<UserDto>(`${apiUrl}/users/me`)
@@ -38,6 +48,6 @@ export const createChat = async (payload: ChatCreateDto) => {
 }
 
 export const chatInfo = async ({ chatId }: { chatId: number }) => {
-	const response = await axios.get<ChatDto>(`${apiUrl}/chats/${chatId}`)
+	const response = await axios.get<ChatResponse>(`${apiUrl}/chats/${chatId}`)
 	return response.data
 }

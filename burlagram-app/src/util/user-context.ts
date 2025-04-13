@@ -1,8 +1,8 @@
-import { UserType } from 'api'
+import { UserListDto } from '@biba/shared'
 import { createContext, use } from 'react'
 
 export const UserContext = createContext<{
-	user: UserType
+	user: UserListDto
 	refreshUser: () => void
 } | null>(null)
 export const useUser = () => use(UserContext)!
